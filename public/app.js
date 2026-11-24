@@ -20,21 +20,21 @@ const DEFAULT_ACTIVITIES = [
 ];
 
 const BASEMAPS = {
-  voyager: {
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    attribution: "&copy; OpenStreetMap &copy; CARTO",
-  },
-  positron: {
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    attribution: "&copy; OpenStreetMap &copy; CARTO",
-  },
-  dark: {
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution: "&copy; OpenStreetMap &copy; CARTO",
-  },
   osm: {
     url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: "&copy; OpenStreetMap contributors",
+  },
+  streets: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Tiles &copy; Esri",
+  },
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Imagery &copy; Esri",
+  },
+  light: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Tiles &copy; Esri",
   },
 };
 
@@ -86,7 +86,7 @@ const state = {
   drawingSegmentId: null,
   savedPlaces: [],
   customActivities: [],
-  basemap: "voyager",
+  basemap: "osm",
 };
 
 // DOM Elements
@@ -232,16 +232,16 @@ function rememberPlace(name, lat, lon) {
 
 // Leaflet Map Setup
 const map = L.map("map", { zoomControl: true }).setView([18.8058, 99.019], 15);
-let activeTileLayer = L.tileLayer(BASEMAPS.voyager.url, {
+let activeTileLayer = L.tileLayer(BASEMAPS.osm.url, {
   maxZoom: 19,
-  attribution: BASEMAPS.voyager.attribution,
+  attribution: BASEMAPS.osm.attribution,
 }).addTo(map);
 
 const mapLayers = L.layerGroup().addTo(map);
 const vertexLayers = L.layerGroup().addTo(map);
 
 function setBasemap(key) {
-  const cfg = BASEMAPS[key] || BASEMAPS.voyager;
+  const cfg = BASEMAPS[key] || BASEMAPS.osm;
   map.removeLayer(activeTileLayer);
   activeTileLayer = L.tileLayer(cfg.url, {
     maxZoom: 19,
