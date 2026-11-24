@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dailies GPX Studio — Timeline &amp; Route Builder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="studio-shell">
+      <!-- Left Editorial Cartography Sidebar -->
+      <aside class="sidebar">
+        <header class="brand-header">
+          <div class="brand-title-row">
+            <div class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 28 28" fill="none">
+                <rect width="28" height="28" rx="7" fill="#16181D" />
+                <path
+                  d="M7 20C14 20 10 8 21 8"
+                  stroke="url(#g)"
+                  stroke-width="3.2"
+                  stroke-linecap="round"
+                />
+                <circle cx="7" cy="20" r="2.7" fill="#fff" />
+                <circle cx="21" cy="8" r="2.7" fill="#fff" />
+                <defs>
+                  <linearGradient id="g" x1="7" y1="20" x2="21" y2="8" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#34C759" />
+                    <stop offset="0.52" stop-color="#38BDF8" />
+                    <stop offset="1" stop-color="#FF9F0A" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div>
+              <h1>Dailies GPX Studio</h1>
+              <p class="subtitle">Pin places, auto-route or hand-draw paths, export Dailies GPX 1.1</p>
+            </div>
+          </div>
+
+          <div class="date-strip">
+            <label class="field-chip">
+              <span>Local Day</span>
+              <input type="date" id="localDateInput" />
+            </label>
+            <label class="field-chip tz-chip">
+              <span>Timezone</span>
+              <select id="tzSelect"></select>
+            </label>
+          </div>
+
+          <div class="utc-meta-bar">
+            <span class="mono-pill" id="utcFilenameBadge">2026-11-24.gpx</span>
+            <span class="utc-hint" id="summaryStats">0 stops · 0 moves</span>
+          </div>
+        </header>
+
+        <nav class="tool-bar" aria-label="Builder actions">
+          <button type="button" class="tool-btn active" id="modePinBtn" title="Click map to place a stationary pin">
+            <span class="dot dot-pin"></span>
+            Drop Pin
+          </button>
+          <button type="button" class="tool-btn" id="modeDrawBtn" title="Draw a new custom move path on the map">
+            <span class="dot dot-move"></span>
+            Draw Move
+          </button>
+          <button type="button" class="tool-btn" id="importGpxBtn" title="Import an existing Dailies or Arc GPX file">
+            Import GPX
+          </button>
+          <button type="button" class="tool-btn subtle" id="clearAllBtn" title="Clear timeline">
+            Clear
+          </button>
+          <input type="file" id="gpxFileInput" accept=".gpx,application/gpx+xml,text/xml" hidden />
+        </nav>
+
+        <!-- Saved Places Quick Tray -->
+        <section class="saved-places-bar" id="savedPlacesSection" hidden>
+          <div class="section-mini-head">
+            <span>Remembered Places (click to add)</span>
+            <button type="button" class="link-btn" id="clearSavedPlacesBtn">Reset</button>
+          </div>
+          <div class="saved-places-chips" id="savedPlacesChips"></div>
+        </section>
+
+        <!-- Timeline Cards -->
+        <main class="timeline-scroll" id="timelineList"></main>
+
+        <!-- Sticky Export Footer -->
+        <footer class="export-footer">
+          <button type="button" class="secondary-btn" id="previewXmlBtn">Inspect GPX</button>
+          <button type="button" class="primary-btn" id="downloadGpxBtn">
+            Download <span id="downloadBtnFilename">GPX</span>
+          </button>
+        </footer>
+      </aside>
+
+      <!-- Right Interactive Map Canvas -->
+      <section class="map-stage">
+        <div id="map"></div>
+
+        <!-- Floating Place Search -->
+        <div class="map-search-wrap">
+          <form id="placeSearchForm" class="search-box" autocomplete="off">
+            <input
+              type="search"
+              id="placeSearchInput"
+              placeholder="Search a place to drop pin (e.g. Central Festival)..."
+            />
+            <button type="submit" id="placeSearchBtn">Find</button>
+          </form>
+          <ul class="search-results" id="searchResults" hidden></ul>
+        </div>
+
+        <!-- Floating Mode Instruction Pill -->
+        <div class="map-mode-banner" id="mapModeBanner">
+          Click anywhere on the map to drop a stationary pin
+        </div>
+
+        <!-- Floating Drawing HUD (visible while drawing or editing a Move path) -->
+        <div class="draw-hud" id="drawHud" hidden>
+          <div class="draw-hud-info">
+            <strong id="drawHudTitle">Drawing Move Path</strong>
+            <span id="drawHudStats">0 pts · 0 m — Click map to add points, drag vertices to adjust</span>
+          </div>
+          <div class="draw-hud-actions">
+            <button type="button" class="hud-btn" id="drawUndoBtn">Undo</button>
+            <button type="button" class="hud-btn" id="drawSnapBtn">Snap to Road</button>
+            <button type="button" class="hud-btn" id="drawClearBtn">Clear</button>
+            <button type="button" class="hud-btn primary" id="drawDoneBtn">Done</button>
+          </div>
+        </div>
+
+        <!-- Map Basemap & Fit Controls -->
+        <div class="map-controls-bottom">
+          <button type="button" class="map-pill-btn" id="fitBoundsBtn">Fit All</button>
+          <button type="button" class="map-pill-btn" id="locateMeBtn">My Area</button>
+          <select id="basemapSelect" class="map-pill-select" aria-label="Map style">
+            <option value="voyager">Voyager</option>
+            <option value="positron">Minimal Light</option>
+            <option value="dark">Midnight</option>
+            <option value="osm">OpenStreetMap</option>
+          </select>
+        </div>
+      </section>
+    </div>
+
+    <!-- GPX Preview Modal -->
+    <div class="modal-backdrop" id="xmlModal" hidden>
+      <div class="modal-card">
+        <div class="modal-head">
+          <div>
+            <h2>GPX 1.1 Output</h2>
+            <p class="modal-sub" id="xmlModalMeta"></p>
+          </div>
+          <div class="modal-head-actions">
+            <button type="button" class="secondary-btn" id="copyXmlBtn">Copy XML</button>
+            <button type="button" class="primary-btn" id="modalDownloadBtn">Download</button>
+            <button type="button" class="icon-close" id="closeXmlModalBtn" aria-label="Close">×</button>
+          </div>
+        </div>
+        <pre class="xml-code" id="xmlPreviewCode"></pre>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
