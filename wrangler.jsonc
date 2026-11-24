@@ -5,7 +5,8 @@
   "compatibility_date": "2026-11-01",
   "workers_dev": true,
   "routes": [
-    { "pattern": "gpx.mysite.wiki", "custom_domain": true }
+    { "pattern": "gpx.mysite.wiki", "custom_domain": true },
+    { "pattern": "gpx.mysite.wiki/*", "zone_name": "mysite.wiki" }
   ],
   "assets": {
     "directory": "./public",
